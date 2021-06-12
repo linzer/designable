@@ -3,20 +3,25 @@ import { createForm } from '@formily/core'
 import { Form } from '@formily/antd'
 import { observer } from '@formily/react'
 import { requestIdle } from '@designable/shared'
-import {
-  usePrefix,
-  useSelected,
-  useCurrentNode,
-  IconWidget,
-} from '@designable/react'
+import { useSelection, useTree, usePrefix, IconWidget } from '@designable/react'
 import { SchemaField } from './SchemaField'
 import { ISettingFormProps } from './types'
 import { SettingsFormContext } from './context'
 import { useLocales } from './effects'
-import { NodePath } from './components/NodePath'
 import { Empty } from 'antd'
 import cls from 'classnames'
 import './styles.less'
+
+const useSelected = () => {
+  const selection = useSelection()
+  return selection?.selected || []
+}
+
+const useCurrentNode = () => {
+  const selected = useSelected()
+  const tree = useTree()
+  return tree?.findById?.(selected[0])
+}
 
 export const SettingsForm: React.FC<ISettingFormProps> = observer(
   (props) => {
@@ -32,14 +37,8 @@ export const SettingsForm: React.FC<ISettingFormProps> = observer(
       })
     }, [node, node?.designerProps?.propsSchema])
 
-    const isEmpty = !(
-      node &&
-      node.designerProps?.propsSchema &&
-      selected.length === 1
-    )
-
     const render = () => {
-      if (!isEmpty) {
+      if (node && node.designerProps?.propsSchema && selected.length === 1) {
         return (
           <div className={cls(prefix, props.className)} style={props.style}>
             <SettingsFormContext.Provider value={props}>
@@ -65,14 +64,7 @@ export const SettingsForm: React.FC<ISettingFormProps> = observer(
       )
     }
 
-    return (
-      <IconWidget.Provider tooltip>
-        <div className={prefix + '-wrapper'}>
-          {!isEmpty && <NodePath />}
-          <div className={prefix + '-content'}>{render()}</div>
-        </div>
-      </IconWidget.Provider>
-    )
+    return <IconWidget.Provider tooltip>{render()}</IconWidget.Provider>
   },
   {
     scheduler: requestIdle,
