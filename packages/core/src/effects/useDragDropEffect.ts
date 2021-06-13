@@ -22,8 +22,15 @@ export const useDragDropEffect = (engine: Engine) => {
     const nodeId = el?.getAttribute(engine.props.nodeIdAttrName)
     engine.workbench.eachWorkspace((currentWorkspace) => {
       const operation = currentWorkspace.operation
+
       if (nodeId || outlineId) {
         const node = engine.findNodeById(outlineId || nodeId)
+        if (operation.focusNode && operation.focusNode.contains(node)) {
+          operation.setDragNodes([operation.focusNode])
+          return
+        } else {
+          operation.focusClean()
+        }
         if (node) {
           if (node?.designerProps?.draggable === false) return
           if (node === node.root) return
