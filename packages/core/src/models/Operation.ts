@@ -10,6 +10,7 @@ import {
   each,
   ICustomEvent,
   IPoint,
+  isFn,
   requestIdle,
 } from '@designable/shared'
 
@@ -67,8 +68,9 @@ export class Operation {
     this.makeObservable()
   }
 
-  dispatch(event: ICustomEvent) {
-    this.workspace.dispatch(event)
+  dispatch(event: ICustomEvent, callback?: () => void) {
+    if (this.workspace.dispatch(event) === false) return
+    if (isFn(callback)) return callback()
   }
 
   getSelectedNodes() {
@@ -181,12 +183,17 @@ export class Operation {
   cloneNodes(nodes: TreeNode[]) {
     const groups: { [parentId: string]: TreeNode[] } = {}
     const lastGroupNode: { [parentId: string]: TreeNode } = {}
-    const filterNestedNode = nodes.filter((node) => {
-      return !nodes.some((parent) => {
-        return node.isMyParents(parent)
+    const filterNestedNode = nodes
+      .sort((before, after) => {
+        if (before.depth !== after.depth) return 0
+        return before.index - after.index >= 0 ? 1 : -1
       })
-    })
-    filterNestedNode.forEach((node) => {
+      .filter((node) => {
+        return !nodes.some((parent) => {
+          return node.isMyParents(parent)
+        })
+      })
+    each(filterNestedNode, (node) => {
       if (node?.designerProps?.cloneable === false) return
       groups[node?.parent?.id] = groups[node?.parent?.id] || []
       groups[node?.parent?.id].push(node)
@@ -198,10 +205,11 @@ export class Operation {
         lastGroupNode[node?.parent?.id] = node
       }
     })
+    const parents = new Map<TreeNode, TreeNode[]>()
     each(groups, (nodes, parentId) => {
       const lastNode = lastGroupNode[parentId]
       let insertPoint = lastNode
-      nodes.forEach((node) => {
+      each(nodes, (node) => {
         const cloned = node.clone()
         if (
           this.selection.has(node) &&
@@ -211,11 +219,20 @@ export class Operation {
           insertPoint = insertPoint.after
         } else if (this.selection.length === 1) {
           const targetNode = this.tree.findById(this.selection.first)
+          let cloneNodes = parents.get(targetNode)
+          if (!cloneNodes) {
+            cloneNodes = []
+            parents.set(targetNode, cloneNodes)
+          }
           if (targetNode && targetNode.allowAppend([cloned])) {
-            targetNode.appendNode(cloned)
+            cloneNodes.push(cloned)
           }
         }
       })
+    })
+    parents.forEach((nodes, target) => {
+      if (!nodes.length) return
+      target.appendNode(...nodes)
     })
   }
 
