@@ -1,18 +1,37 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { requestIdle } from '@designable/shared'
+import { observer } from '@formily/reactive-react'
 import { TextWidget, IconWidget } from '../widgets'
-import { usePrefix } from '../hooks'
+import { usePrefix, useWorkbench } from '../hooks'
 import cls from 'classnames'
 export interface ISettingPanelProps {
   title?: React.ReactNode
   extra?: React.ReactNode
 }
 
-export const SettingsPanel: React.FC<ISettingPanelProps> = (props) => {
+export const SettingsPanel: React.FC<ISettingPanelProps> = observer((props) => {
   const prefix = usePrefix('settings-panel')
+  const workbench = useWorkbench()
+  const [innerVisible, setInnerVisible] = useState(true)
   const [pinning, setPinning] = useState(false)
   const [visible, setVisible] = useState(true)
-
-  if (!visible)
+  useEffect(() => {
+    if (visible || workbench.type === 'DESIGNABLE') {
+      if (!innerVisible) {
+        requestIdle(() => {
+          requestAnimationFrame(() => {
+            setInnerVisible(true)
+          })
+        })
+      }
+    }
+  }, [visible, workbench.type])
+  if (workbench.type !== 'DESIGNABLE') {
+    if (innerVisible) setInnerVisible(false)
+    return null
+  }
+  if (!visible) {
+    if (innerVisible) setInnerVisible(false)
     return (
       <div
         className={prefix + '-opener'}
@@ -23,6 +42,7 @@ export const SettingsPanel: React.FC<ISettingPanelProps> = (props) => {
         <IconWidget infer="Setting" size={20} />
       </div>
     )
+  }
   return (
     <div className={cls(prefix, { pinning })}>
       <div className={prefix + '-header'}>
@@ -58,7 +78,7 @@ export const SettingsPanel: React.FC<ISettingPanelProps> = (props) => {
           />
         </div>
       </div>
-      <div className={prefix + '-body'}>{props.children}</div>
+      <div className={prefix + '-body'}>{innerVisible && props.children}</div>
     </div>
   )
-}
+})

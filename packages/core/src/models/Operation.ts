@@ -171,28 +171,30 @@ export class Operation {
         const afterIndex = node.index + 1
         const parent = node.parent
         node.remove()
-        const previus = previousIndex > -1 && parent.children[previousIndex]
+        const previous = previousIndex > -1 && parent.children[previousIndex]
         const after =
           afterIndex < parent.children.length && parent.children[afterIndex]
-        this.selection.select(previus ? previus : after ? after : node.parent)
+        this.selection.select(previous ? previous : after ? after : node.parent)
         this.hover.clear()
       }
     }
   }
 
+  sortNodes(nodes: TreeNode[]) {
+    return nodes.sort((before, after) => {
+      if (before.depth !== after.depth) return 0
+      return before.index - after.index >= 0 ? 1 : -1
+    })
+  }
+
   cloneNodes(nodes: TreeNode[]) {
     const groups: { [parentId: string]: TreeNode[] } = {}
     const lastGroupNode: { [parentId: string]: TreeNode } = {}
-    const filterNestedNode = nodes
-      .sort((before, after) => {
-        if (before.depth !== after.depth) return 0
-        return before.index - after.index >= 0 ? 1 : -1
+    const filterNestedNode = this.sortNodes(nodes).filter((node) => {
+      return !nodes.some((parent) => {
+        return node.isMyParents(parent)
       })
-      .filter((node) => {
-        return !nodes.some((parent) => {
-          return node.isMyParents(parent)
-        })
-      })
+    })
     each(filterNestedNode, (node) => {
       if (node?.designerProps?.cloneable === false) return
       groups[node?.parent?.id] = groups[node?.parent?.id] || []
@@ -216,7 +218,7 @@ export class Operation {
           insertPoint.parent.allowAppend([cloned])
         ) {
           insertPoint.insertAfter(cloned)
-          insertPoint = insertPoint.after
+          insertPoint = insertPoint.next
         } else if (this.selection.length === 1) {
           const targetNode = this.tree.findById(this.selection.first)
           let cloneNodes = parents.get(targetNode)

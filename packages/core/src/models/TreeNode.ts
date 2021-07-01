@@ -115,7 +115,7 @@ export class TreeNode {
 
   constructor(node?: ITreeNode, parent?: TreeNode) {
     if (node instanceof TreeNode) {
-      return resetNodeParent(node, parent)
+      return node
     }
     this.id = node.id || uid()
     if (parent) {
@@ -186,10 +186,12 @@ export class TreeNode {
   }
 
   get previous() {
+    if (this.parent === this || !this.parent) return
     return this.parent.children[this.index - 1]
   }
 
-  get after() {
+  get next() {
+    if (this.parent === this || !this.parent) return
     return this.parent.children[this.index + 1]
   }
 
@@ -201,7 +203,8 @@ export class TreeNode {
   }
 
   get index() {
-    return this.parent?.children?.indexOf(this) || -1
+    if (this.parent === this || !this.parent) return 0
+    return this.parent.children.indexOf(this)
   }
 
   get childrens(): TreeNode[] {
@@ -216,6 +219,14 @@ export class TreeNode {
 
   get isInOperation() {
     return !!this.root?.operation
+  }
+
+  get lastChild() {
+    return this.children[this.children.length - 1]
+  }
+
+  get firstChild() {
+    return this.children[0]
   }
 
   getPrevious(step = 1) {
@@ -256,10 +267,16 @@ export class TreeNode {
     return this.root.isSelfSourceNode
   }
 
-  triggerMutation<T>(event: any, callback?: () => T, defaults?: T): T {
-    if (this?.root?.operation) {
-      const result = this.root.operation.dispatch(event, callback) || defaults
+  takeSnapshot() {
+    if (this.root?.operation) {
       this.root.operation.snapshot()
+    }
+  }
+
+  triggerMutation<T>(event: any, callback?: () => T, defaults?: T): T {
+    if (this.root?.operation) {
+      const result = this.root.operation.dispatch(event, callback) || defaults
+      this.takeSnapshot()
       return result
     } else if (isFn(callback)) {
       return callback()
@@ -566,11 +583,15 @@ export class TreeNode {
         id: uid(),
         componentName: this.componentName,
         props: toJS(this.props),
-        children: this.children.map((treeNode) => {
-          return treeNode.clone(newNode)
-        }),
+        children: [],
       },
       parent ? parent : this.parent
+    )
+    newNode.children = resetNodesParent(
+      this.children.map((treeNode) => {
+        return treeNode.clone(newNode)
+      }),
+      newNode
     )
     return newNode
   }

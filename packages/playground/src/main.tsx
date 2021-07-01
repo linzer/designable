@@ -3,9 +3,10 @@ import ReactDOM from 'react-dom'
 import {
   Designer,
   IconWidget,
-  ToolbarWidget,
   Workspace,
-  Viewport,
+  ViewPanel,
+  DesignerToolsWidget,
+  ViewToolsWidget,
   OutlineTreeWidget,
   DragSourceWidget,
   MainPanel,
@@ -15,7 +16,7 @@ import {
   ViewportPanel,
   SettingsPanel,
 } from '@designable/react'
-import { SettingsForm } from '@designable/react-settings-form'
+import { SettingsForm, MonacoInput } from '@designable/react-settings-form'
 import { observer } from '@formily/react'
 import {
   createDesigner,
@@ -198,7 +199,7 @@ const Actions = observer(() => (
       value={GlobalRegistry.getDesignerLanguage()}
       optionType="button"
       options={[
-        { label: 'Engligh', value: 'en-US' },
+        { label: 'English', value: 'en-US' },
         { label: '简体中文', value: 'zh-CN' },
       ]}
       onChange={(e) => {
@@ -241,47 +242,23 @@ const App = () => {
         <Workspace id="form">
           <WorkspacePanel>
             <ToolbarPanel>
-              <ToolbarWidget />
-              <Button.Group>
-                <Button
-                  disabled={view === 'design'}
-                  onClick={() => {
-                    setView('design')
-                  }}
-                  size="small"
-                >
-                  <IconWidget infer="Design" />
-                </Button>
-                <Button
-                  disabled={view === 'json'}
-                  onClick={() => {
-                    setView('json')
-                  }}
-                  size="small"
-                >
-                  <IconWidget infer="JSON" />
-                </Button>
-                <Button
-                  disabled={view === 'code'}
-                  onClick={() => {
-                    setView('code')
-                  }}
-                  size="small"
-                >
-                  <IconWidget infer="Code" />
-                </Button>
-              </Button.Group>
+              <DesignerToolsWidget />
+              <ViewToolsWidget />{' '}
             </ToolbarPanel>
             <ViewportPanel>
-              {view === 'json' && <div>JSON 输入</div>}
-              {view === 'design' && (
-                <Viewport>
-                  {/* <Sandbox
-                    jsAssets={['./runtime.bundle.js', './sandbox.bundle.js']}
-                  /> */}
-                  <Content />
-                </Viewport>
-              )}
+              <ViewPanel type="DESIGNABLE">{() => <Content />}</ViewPanel>
+              <ViewPanel type="JSONTREE">
+                {(tree) => {
+                  return (
+                    <div style={{ overflow: 'hidden', height: '100%' }}>
+                      <MonacoInput
+                        language="javascript"
+                        defaultValue={`<div><div>123123<div>123123<div>123123<div>123123</div></div></div></div></div>`}
+                      />
+                    </div>
+                  )
+                }}
+              </ViewPanel>
             </ViewportPanel>
           </WorkspacePanel>
         </Workspace>

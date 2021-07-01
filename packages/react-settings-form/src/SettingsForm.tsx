@@ -11,7 +11,7 @@ import {
 } from '@designable/react'
 import { SchemaField } from './SchemaField'
 import { ISettingFormProps } from './types'
-import { SettingsFormContext } from './context'
+import { SettingsFormContext } from './shared/context'
 import { useLocales } from './effects'
 import { NodePath } from './components/NodePath'
 import { Empty } from 'antd'
@@ -19,7 +19,7 @@ import cls from 'classnames'
 import './styles.less'
 
 const GlobalState = {
-  idleReuqest: null,
+  idleRequest: null,
 }
 
 export const SettingsForm: React.FC<ISettingFormProps> = observer(
@@ -60,7 +60,10 @@ export const SettingsForm: React.FC<ISettingFormProps> = observer(
                 feedbackLayout="none"
                 tooltipLayout="text"
               >
-                <SchemaField schema={node.designerProps.propsSchema as any} />
+                <SchemaField
+                  schema={node.designerProps.propsSchema as any}
+                  components={props.components}
+                />
               </Form>
             </SettingsFormContext.Provider>
           </div>
@@ -84,8 +87,8 @@ export const SettingsForm: React.FC<ISettingFormProps> = observer(
   },
   {
     scheduler: (update) => {
-      cancelIdle(GlobalState.idleReuqest)
-      GlobalState.idleReuqest = requestIdle(update)
+      cancelIdle(GlobalState.idleRequest)
+      GlobalState.idleRequest = requestIdle(update)
     },
   }
 )

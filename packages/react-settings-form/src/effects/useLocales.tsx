@@ -1,6 +1,9 @@
+import React from 'react'
 import { isVoidField, onFieldReact } from '@formily/core'
+import { isEqual } from '@formily/shared'
 import { GlobalRegistry } from '@designable/core'
 import { isPlainObj, isStr } from '@designable/shared'
+import { IconWidget } from '@designable/react'
 
 const takeLocales = (token: string): any => {
   const message = GlobalRegistry.getDesignerMessage(token)
@@ -10,6 +13,13 @@ const takeLocales = (token: string): any => {
     }
   if (isPlainObj(message)) return message
   return {}
+}
+
+const takeIcon = (message: string) => {
+  if (!isStr(message)) return
+  const matched = message.match(/@([^:\s]+)(?:\s*\:\s*([\s\S]+))?/)
+  if (matched) return [matched[1], matched[2]]
+  return
 }
 
 export const useLocales = () => {
@@ -32,15 +42,25 @@ export const useLocales = () => {
     }
     if (!isVoidField(field)) {
       if (locales.dataSource?.length && field.dataSource?.length) {
-        field.dataSource = field.dataSource.map((item, index) => {
+        const newDataSource = field.dataSource.map((item, index) => {
+          const label =
+            locales.dataSource[index] ||
+            locales.dataSource[item.value] ||
+            item.label
+          const icon = takeIcon(label)
           return {
             ...item,
-            label:
-              locales.dataSource[index] ||
-              locales.dataSource[item.value] ||
-              item.label,
+            value: item?.value ?? null,
+            label: icon ? (
+              <IconWidget infer={icon[0]} tooltip={icon[1]} />
+            ) : (
+              label
+            ),
           }
         })
+        if (!isEqual(newDataSource, field.dataSource)) {
+          field.dataSource = newDataSource
+        }
       }
     }
   })

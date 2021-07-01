@@ -2,19 +2,35 @@ import React, { Fragment, useRef } from 'react'
 import { Button, InputNumber } from 'antd'
 import { observer } from '@formily/reactive-react'
 import { CursorType, ScreenType } from '@designable/core'
-import { useCursor, useHistory, useScreen, usePrefix } from '../../hooks'
+import {
+  useCursor,
+  useHistory,
+  useScreen,
+  usePrefix,
+  useWorkbench,
+} from '../../hooks'
 import { IconWidget } from '../IconWidget'
+import cls from 'classnames'
 import './styles.less'
-export type IToolbarWidgetProps = React.HTMLAttributes<HTMLDivElement>
 
-export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
-  (props: IToolbarWidgetProps) => {
+type DesignerToolsType = 'HISTORY' | 'CURSOR' | 'SCREEN_TYPE'
+
+export type IDesignerToolsWidgetProps = {
+  className?: string
+  style?: React.CSSProperties
+  use?: DesignerToolsType[]
+}
+
+export const DesignerToolsWidget: React.FC<IDesignerToolsWidgetProps> =
+  observer((props) => {
     const screen = useScreen()
     const cursor = useCursor()
+    const workbench = useWorkbench()
     const history = useHistory()
     const sizeRef = useRef<{ width?: any; height?: any }>({})
-    const prefix = usePrefix('toolbar')
+    const prefix = usePrefix('designer-tools')
     const renderHistoryController = () => {
+      if (!props.use.includes('HISTORY')) return null
       return (
         <Button.Group size="small" style={{ marginRight: 20 }}>
           <Button
@@ -40,6 +56,8 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
     }
 
     const renderCursorController = () => {
+      if (workbench.type !== 'DESIGNABLE') return null
+      if (!props.use.includes('CURSOR')) return null
       return (
         <Button.Group size="small" style={{ marginRight: 20 }}>
           <Button
@@ -65,7 +83,9 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
     }
 
     const renderResponsiveController = () => {
-      if (screen.type !== ScreenType.Responsive) return
+      if (workbench.type !== 'DESIGNABLE') return null
+      if (!props.use.includes('SCREEN_TYPE')) return null
+      if (screen.type !== ScreenType.Responsive) return null
       return (
         <Fragment>
           <InputNumber
@@ -115,6 +135,8 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
     }
 
     const renderScreenTypeController = () => {
+      if (workbench.type !== 'DESIGNABLE') return null
+      if (!props.use.includes('SCREEN_TYPE')) return null
       return (
         <Button.Group size="small" style={{ marginRight: 20 }}>
           <Button
@@ -149,6 +171,8 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
     }
 
     const renderMobileController = () => {
+      if (workbench.type !== 'DESIGNABLE') return null
+      if (!props.use.includes('SCREEN_TYPE')) return null
       if (screen.type !== ScreenType.Mobile) return
       return (
         <Button
@@ -170,16 +194,7 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
     }
 
     return (
-      <div
-        {...props}
-        className={prefix}
-        style={{
-          ...props.style,
-          userSelect: 'none',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
+      <div style={props.style} className={cls(prefix, props.className)}>
         {renderHistoryController()}
         {renderCursorController()}
         {renderScreenTypeController()}
@@ -187,5 +202,8 @@ export const ToolbarWidget: React.FC<IToolbarWidgetProps> = observer(
         {renderResponsiveController()}
       </div>
     )
-  }
-)
+  })
+
+DesignerToolsWidget.defaultProps = {
+  use: ['HISTORY', 'CURSOR', 'SCREEN_TYPE'],
+}
